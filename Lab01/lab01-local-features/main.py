@@ -16,9 +16,9 @@ from functions.match_descriptors import match_descriptors
 from functions.vis_utils import plot_image_pair_with_matches, plot_image_with_keypoints
 
 # constants
-HARRIS_SIGMA = 1.0
-HARRIS_K = 0.05  # in the range of 0.04 - 0.06
-HARRIS_THRESH = 1e-5
+HARRIS_SIGMA = 2 # [0.5, 2.0]
+HARRIS_K = 0.05  # [0.04, 0.06]
+HARRIS_THRESH = 1e-5 # [1e-6, 1e-4]
 MATCHING_RATIO_TEST_THRESHOLD = 0.5
 
 

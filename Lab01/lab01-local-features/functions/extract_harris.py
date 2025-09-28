@@ -38,17 +38,37 @@ def extract_harris(
     # TODO: implement the computation of the image gradients Ix and Iy here.
     # You may refer to scipy.signal.convolve2d for the convolution.
     # Do not forget to use the mode "same" to keep the image size unchanged.
-    print("Hello World!")
-    raise NotImplementedError("Implement the image gradients computation.")
+    x_kernel = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]])
+    Ix = signal.convolve2d(img, x_kernel, mode='same', boundary='symm')
+    y_kernel = np.transpose(x_kernel)
+    Iy = signal.convolve2d(img, y_kernel, mode='same', boundary='symm')
 
     # 2. Compute elements of the local auto-correlation matrix "M"
     # TODO: compute the auto-correlation matrix here
     # You may refer to cv2.GaussianBlur or scipy.signal.convolve2d to perform the weighted sum
-    raise NotImplementedError("Implement the auto-correlation matrix computation.")
+    Ixx = Ix * Ix
+    Iyy = Iy * Iy
+    Ixy = Ix * Iy
+
+    # Smoothed versions
+    # Set neighborhood of M via sigma -> (0,0) means that the neighborhood size is calculated from sigma
+    # Weight is Gaussian
+    Sxx = cv2.GaussianBlur(Ixx, (0, 0), sigma)
+    Syy = cv2.GaussianBlur(Iyy, (0, 0), sigma)
+    Sxy = cv2.GaussianBlur(Ixy, (0, 0), sigma)
+
+    # 4D M matrix. (H, W, 2, 2); (2,2) is the M matrix at a given pixel
+    M = np.zeros((img.shape[0], img.shape[1], 2, 2))
+    M[:, :, 0, 0] = Sxx
+    M[:, :, 0, 1] = Sxy
+    M[:, :, 1, 0] = Sxy
+    M[:, :, 1, 1] = Syy
 
     # 3. Compute Harris response function C
     # TODO: compute the Harris response function C here
-    raise NotImplementedError("Implement the Harris response function computation.")
+    det_M = (M[:, :, 0, 0] * M[:, :, 1, 1]) - (M[:, :, 1, 0] * M[:, :, 0, 1])
+    trace_M = M[:, :, 0, 0] + M[:, :, 1, 1]
+    C = det_M - k * (trace_M ** 2)
 
     # 4. Detection with threshold and non-maximum suppression
     # TODO: detection and find the corners here
@@ -56,6 +76,11 @@ def extract_harris(
     # You may refer to np.where to find coordinates of points that fulfill some condition;
     # Please, pay attention to the order of the coordinates.
     # You may refer to np.stack to stack the coordinates to the correct output format
-    raise NotImplementedError("Implement the corner detection and non-maximum suppression.")
+    c = C.copy()
+    local_max = ndimage.maximum_filter(c, size=3, mode="reflect") # maximum harris response in its 3x3 neighborhood
+    peak_mask = (c == local_max) & (c > thresh) # get the mask of local peaks above threshold
+    # corners [x, y] where x=col, y=row
+    ys, xs = np.where(peak_mask)
+    corners = np.stack((xs, ys), axis=-1)
 
     return corners, C
